@@ -1,41 +1,51 @@
-# Data Summary Report - Consolidação e Governança de Dados - Fase TP3
+# Data Summary Report — Plataforma de Inteligência ESG & ODS 11
 
-## 1. Visão Geral da Ingestão de Dados
-Na fase TP3, a estratégia de aquisição de dados foi expandida para suportar interações dinâmicas e distribuição via microsserviços. Os dados agora alimentam tanto arquivos físicos no diretório `data/raw/` quanto o serviço em memória servido pela API em **FastAPI**, que passa a intermediar a entrega para o frontend em Streamlit.
+## 1. Visão Geral do Ciclo de Dados
+Este documento consolida a arquitetura de dados do projeto sob as metodologias **TDSP** e **CRISP-DM**, descrevendo como os dados não estruturados extraídos da web foram tratados, enriquecidos por modelos de linguagem natural (LLMs) e disponibilizados para consumo analítico.
 
----
-
-## 2. Mapeamento Detalhado das Fontes de Dados (Incluindo Scraping Dinâmico)
-
-| Identificador | Origem / Fonte | Formato / Protocolo | Script / Módulo | Armazenamento | Finalidade Analítica / Uso em IA |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **SRC-01** | Agência Brasil (EBC) - Estático | HTML / Web Scraping (`BeautifulSoup`) | `src/data/scraping_noticias.py` | `data/raw/noticias_sustentabilidade.csv` | Fornecer notícias sobre sustentabilidade urbana e ODS 11. |
-| **SRC-02** | Corpus Textual Agregado | Texto Plano (`.txt`) | `src/data/scraping_noticias.py` | `data/raw/corpus_noticias.txt` | Base para sumarização e extração de palavras-chave via LLM. |
-| **SRC-03** | Portais de Notícias Urbanas (Dinâmico) | HTML + JS / Selenium WebDriver | `src/data/scraping_dinamico.py` | `data/raw/noticias_dinamicas.csv` | Capturar conteúdos que exigem renderização assíncrona ou rolar de tela. |
-| **SRC-04** | Arquivos CSV de Usuário (Upload) | CSV / Form Upload | `pages/2_📁_Gestao_Arquivos.py` | `st.session_state` / API | Permitir que gestores injetem bases proprietárias na sessão. |
-| **SRC-05** | Servidor de Dados REST | JSON / HTTP (FastAPI) | `src/api/main.py` | Memória / JSON | Prover rotas `GET` e `POST` padronizadas para consumo da aplicação. |
+| Etapa do Ciclo | Módulo / Arquivo | Tecnologia | Artefato Gerado |
+| :--- | :--- | :--- | :--- |
+| **1. Coleta Estática** | `src/data/scraping_noticias.py` | `Requests` + `BeautifulSoup4` | `data/raw/noticias_sustentabilidade.csv` |
+| **2. Coleta Dinâmica** | `src/data/scraping_dinamico.py` | `Selenium WebDriver` (Headless) | `data/raw/noticias_dinamicas.csv` |
+| **3. Sanitização & NLP** | `src/data/preparacao_llm.py` | `Python` / `Regex` / `JSON` | `data/processed/dataset_llm_prep.json` |
+| **4. Disponibilização REST** | `src/api/main.py` | `FastAPI` + `Pydantic` | Endpoints `/noticias` e `/processar_texto` |
+| **5. Enriquecimento & IA** | `src/api/main.py` + `src/pages/` | `DistilBERT` + `Prompt Engineering` | Classificação ESG, Resumos e Recomendações |
 
 ---
 
-## 3. Dicionário de Variáveis do Schema Expandido
+## 2. Fontes e Integração dos Dados Coletados
+A base de conhecimento é alimentada por fontes jornalísticas públicas (com foco na Agência Brasil e portais de notícias socioambientais) alinhadas aos **Objetivos de Desenvolvimento Sustentável (ODS 11 — Cidades e Comunidades Sustentáveis e ODS 12 — Consumo e Produção Responsáveis)**:
 
-A tabela abaixo descreve o contrato de dados mantido pela API e consumido pela interface gráfica:
-
-| Nome do Campo | Tipo na API | Tipo em Pandas | Descrição | Exemplo de Conteúdo |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `integer` | `int64` | Identificador único numérico do registro. | `1` |
-| `Titulo` | `string` | `object` | Título ou manchete da publicação sobre ESG/ODS 11. | *"Expansão de parques solares em áreas urbanas"* |
-| `Resumo` | `string` | `object` | Breve descrição ou lide da matéria. | *"Projeto prevê redução de 20% na pegada de carbono."* |
-| `Link` | `string` | `object` | Endereço URL completo da fonte da notícia. | `"https://agenciabrasil.ebc.com.br/..."` |
-| `Fonte` | `string` | `object` | Mapeamento da origem (`BeautifulSoup`, `Selenium` ou `Manual`). | `"Selenium_Scraper"` |
+1. **Extração Estática (`noticias_sustentabilidade.csv`):** Captura manchetes, resumos/lides e links de páginas HTML estáticas, estruturando os registros iniciais com rastreabilidade de origem (`Fonte = BeautifulSoup_Static`).
+2. **Extração Dinâmica (`noticias_dinamicas.csv`):** Contorna carregamentos assíncronos em JavaScript utilizando navegador automatizado (`Selenium`), ampliando a cobertura temática para ocorrências climáticas, mobilidade urbana e políticas ambientais (`Fonte = Selenium_Dynamic`).
+3. **Consolidação em Memória e Deduplicação:** Na camada de serviço (`src/api/main.py`) e nos pipelines analíticos, ambas as fontes são unificadas via `pandas.concat()`, aplicando remoção de duplicatas pela chave `Titulo`, preenchimento de valores ausentes (`fillna`) e atribuição de identificadores únicos (`id`).
 
 ---
 
-## 4. Governança, Tratamento e Preparação para LLMs
+## 3. Esquema do Dataset e Dicionário de Variáveis
 
-1. **Padronização RESTful:**
-   - A conversão entre os dados em disco/memória e as respostas HTTP é tratada utilizando modelos Pydantic na API, garantindo tipagem forte e validação automática.
-2. **Sanitização de Texto para Modelos de Linguagem:**
-   - Caracteres especiais, quebras de linha duplicadas e marcas d'água de scraping são limpos antes do armazenamento no corpus textual, preparando os dados para etapas de embeddings e prompts.
-3. **Controle de Redundância:**
-   - A inclusão de novos registros via endpoint `POST` da FastAPI realiza checagem de duplicidade com base no título da matéria.
+### 3.1. Dados Tabulares Consolidados (Camada Raw & API)
+- **`id` (`int`):** Identificador sequencial único do registro consolidado.
+- **`Titulo` (`string`):** Manchete principal da notícia coletada.
+- **`Resumo` (`string`):** Texto de apoio ou lide jornalístico (tratado para ausência de nulos).
+- **`Link` (`string`):** URL original da publicação para auditoria e verificação da fonte.
+- **`Fonte` (`string`):** Metadado indicador do coletor utilizado (`BeautifulSoup_Static`, `Selenium_Dynamic` ou `API_Post`).
+
+### 3.2. Corpus Textual Sanitizado (`dataset_llm_prep.json`)
+Para evitar ruídos semânticos e estouro da janela de contexto dos modelos Transformer, o script `preparacao_llm.py` executa limpeza de tags HTML residuais, normalização de espaços e concatenação estruturada (`Título + Resumo`), gerando objetos JSON com:
+- **`id` (`int`):** Chave de rastreamento.
+- **`texto` (`string`):** Texto limpo e pronto para inferência.
+- **`tamanho_caracteres` (`int`):** Métrica de controle para truncamento seguro (limite de 512 tokens no encoder).
+
+---
+
+## 4. Transformação em Insights via Inteligência Artificial
+Os dados brutos passam por duas camadas complementares de inteligência:
+1. **Classificação de Polaridade ESG (Modelo Local DistilBERT):** Cada notícia é classificada em **Positivo** (avanços sustentáveis, investimentos verdes, políticas públicas), **Neutro** (informes técnicos/administrativos) ou **Negativo** (desastres climáticos, desmatamento, crises urbanas), acompanhada do score de confiança probabilístico.
+2. **Síntese e Apoio à Decisão via Prompt Engineering:** Os textos classificados e suas estatísticas agregadas são injetados como contexto em templates de prompts estruturados (delimitadores de contexto, definição de papel analítico e restrições de grounding), transformando notícias dispersas em diagnósticos executivos e recomendações de governança.
+
+---
+
+## 5. Qualidade, Limitações e Governança dos Dados
+- **Qualidade:** Integridade garantida por schemas `Pydantic` na API e validações de tamanho mínimo e presença de caracteres alfabéticos antes de qualquer inferência.
+- **Limitações Mitigadas:** Coletas web estão sujeitas a alterações de layout HTML; por isso, o projeto adota arquitetura híbrida (estática + dinâmica) e fallback de leitura em cache local (`CSV`/`JSON`), assegurando disponibilidade contínua do dashboard mesmo em modo offline.

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from transformers import pipeline
+from src.ai.agente_esg import executar_agente_decisao, MODELO_GENERATIVO
 
 # ==========================================================
 # 1. CONFIGURAÇÃO DA APLICAÇÃO E CARREGAMENTO DO MODELO LOCAL
@@ -94,6 +95,28 @@ class ProcessamentoTextoResponse(BaseModel):
     confianca: float = Field(..., description="Score de probabilidade da predição (0.0 a 1.0)")
     tempo_processamento_ms: float = Field(..., description="Tempo gasto pela inferência local em milissegundos")
 
+class AgenteDecisaoRequest(BaseModel):
+    foco_analise: str = Field(
+        default="Avaliação geral de riscos ambientais e governança urbana (ODS 11 e 12)",
+        min_length=5,
+        max_length=500,
+        description="Direcionamento ou pergunta estratégica do gestor para o agente ESG."
+    )
+    limite_noticias: int = Field(
+        default=15,
+        ge=5,
+        le=50,
+        description="Quantidade de notícias da base real a serem analisadas pelo agente."
+    )
+
+
+class AgenteDecisaoResponse(BaseModel):
+    foco_analise: str
+    modelo_generativo: str
+    total_noticias_analisadas: int
+    distribuicao_sentimentos: dict
+    prompt_utilizado: str
+    parecer_agente: str
 
 # ==========================================================
 # 3. HANDLER GLOBAL DE EXCEÇÕES DE VALIDAÇÃO (HTTP 422)
@@ -223,6 +246,38 @@ def cadastrar_noticia(nova_noticia: NoticiaRequest):
         registro=NoticiaResponse(**novo_registro)
     )
 
+@app.post(
+    "/agente_decisao",
+    response_model=AgenteDecisaoResponse,
+    responses={400: {"model": ErroHTTPResponse}, 500: {"model": ErroHTTPResponse}},
+    summary="Executar Agente Inteligente de Decisão ESG",
+    tags=["Inteligência Artificial (LLM)"]
+)
+def rota_agente_decisao(payload: AgenteDecisaoRequest):
+    """
+    Executa o Agente Inteligente ESG: consolida os dados coletados, classifica
+    sentimentos com DistilBERT e gera recomendações via Prompt Engineering com Qwen2.5-1.5B.
+    """
+    try:
+        resultado = executar_agente_decisao(
+            foco_usuario=payload.foco_analise.strip(),
+            limite_noticias=payload.limite_noticias
+        )
+        return AgenteDecisaoResponse(
+            foco_analise=resultado["foco_analise"],
+            modelo_generativo=MODELO_GENERATIVO,
+            total_noticias_analisadas=resultado["total_noticias_analisadas"],
+            distribuicao_sentimentos=resultado["distribuicao_sentimentos"],
+            prompt_utilizado=resultado["prompt_utilizado"],
+            parecer_agente=resultado["parecer_agente"]
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao executar o agente inteligente ESG: {str(e)}"
+        )
 
 @app.post(
     "/processar_texto",

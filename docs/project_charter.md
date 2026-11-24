@@ -1,43 +1,40 @@
-# Project Charter - Plataforma de Gestão Sustentável e ESG (ODS 11) - Fase TP3
+# Project Charter — Plataforma de Inteligência ESG & ODS 11
 
-## 1. Visão Geral e Justificativa do Projeto (Revisada - TP3)
-O crescimento acelerado dos centros urbanos impõe desafios crescentes de gestão pública e privada, exigindo um acompanhamento ágil sobre consumo de recursos, descarte de resíduos e políticas sustentáveis. Este projeto evolui a solução analítica em Python para uma arquitetura orientada a microsserviços, integrando o frontend interativo em Streamlit a uma API RESTful em FastAPI e pipelines de raspagem dinâmica com Selenium. A solução permanece alinhada ao **ODS 11 (Cidades e Comunidades Sustentáveis)** e ao **ODS 12 (Consumo e Produção Responsáveis)** da Agenda 2030 das Nações Unidas.
+## 1. Problema de Negócio e Contexto Estratégico
+Gestores públicos, analistas de sustentabilidade e equipes de governança corporativa (ESG) enfrentam grande volume e dispersão de informações diárias sobre impactos ambientais, eventos climáticos extremos, mobilidade e políticas urbanas. O monitoramento manual dessas notícias é lento, reativo e dificulta a priorização de riscos alinhados à **Agenda 2030 da ONU**, especialmente aos **ODS 11 (Cidades e Comunidades Sustentáveis)** e **ODS 12 (Consumo e Produção Responsáveis)**.
 
-Nesta terceira fase, amplia-se a capacidade de ingestão com captura de dados dinâmicos, desacopla-se o consumo de dados via endpoints REST e estrutura-se o ecossistema textual para futura integração com Large Language Models (LLMs).
-
-## 2. Objetivos de Negócio e Metas Reavaliadas
-- **Arquitetura Desacoplada e Escalável:** Construir uma API com FastAPI para servir dados de sustentabilidade via protocolos HTTP (`GET` e `POST`), garantindo a interoperabilidade com outros sistemas.
-- **Captura Avançada de Dados (Scraping Dinâmico):** Expandir a extração de notícias e dados públicos utilizando `Selenium` para contornar renderizações assíncronas em JavaScript.
-- **Navegação Modular (Multipáginas):** Reestruturar a interface gráfica em páginas independentes no Streamlit, melhorando a usabilidade e a distribuição das análises.
-- **Preparação para Inteligência Artificial:** Estruturar e sanear os corpos textuais coletados para viabilizar tarefas de Processamento de Linguagem Natural (PLN) e modelos de linguagem (LLMs) no TP4.
-
-## 3. Escopo do Projeto (Atualizado - TP3)
-
-### No Escopo (Entregas TP1, TP2 e TP3):
-- **Evolução de Arquitetura:** Estruturação da aplicação multipáginas no Streamlit no diretório `pages/`.
-- **Backend com FastAPI:** Implementação do servidor web em `src/api/main.py` com rotas documentadas (`/docs` e `/redoc`).
-- **Scraping Dinâmico:** Script em Python utilizando `Selenium WebDriver` para extração em portais com carregamento via script/AJAX.
-- **Consumo de API:** Frontend Streamlit realizando requisições assíncronas/HTTP para a API em FastAPI.
-- **Governança e Preparação para IA:** Mapeamento de casos de uso para LLMs (resumos automáticos, análise de sentimento e Q&A).
-- **Documentação de Processo:** Atualização completa dos relatórios TDSP/CRISP-DM na pasta `docs/`.
-
-### Fora do Escopo:
-- Fine-tuning ou treinamento do zero de LLMs proprietárias (serão utilizadas APIs/modelos pré-treinados na etapa TP4).
-- Implantação do servidor FastAPI em contêineres Docker em ambiente de produção (Kubernetes/AWS).
-
-## 4. Stakeholders e Papéis
-- **Avaliadores e Docentes:** Professores e comissão técnica do Instituto Infnet.
-- **Desenvolvedor e Engenheiro de Dados:** Responsável pela construção dos pipelines de raspagem (Selenium/BeautifulSoup), desenvolvimento da API em FastAPI e arquitetura Streamlit.
-- **Gestores Urbanos e Analistas ESG:** Usuários finais que utilizam a plataforma para visualização de indicadores e consulta de notícias.
-
-## 5. Critérios de Sucesso e KPIs (Fase TP3)
-- **Disponibilidade da API:** Resposta dos endpoints `/noticias` em tempo inferior a 300ms.
-- **Eficácia da Raspagem Dinâmica:** Coleta bem-sucedida de elementos dinâmicos sem falhas de timeout com Selenium.
-- **Modularidade da Interface:** Navegação fluida entre pelo menos 4 páginas estruturadas na aplicação.
-- **Prontidão para LLMs:** Base textual rotulada e sanitizada pronta para pipelines de embeddings e inferência.
+**Solução Proposta:** Desenvolver uma plataforma ponta a ponta de Ciência de Dados Aplicada capaz de coletar notícias reais automaticamente, estruturá-las em uma API validada e aplicar modelos de linguagem natural (LLMs) com *Prompt Engineering* para classificar riscos, sintetizar cenários e apoiar a tomada de decisão baseada em evidências.
 
 ---
 
-## 6. Evolução da Arquitetura de Inteligência Artificial (Fase TP4)
-- **Modelo Local Integrado:** `lxyuan/distilbert-base-multilingual-cased-sentiments-student` (DistilBERT multilíngue) executado localmente via `transformers` e `torch` em CPU.
-- **Novo Endpoint RESTful:** Rota `POST /processar_texto` adicionada ao backend FastAPI para realizar análise de sentimento sob demanda com validação de contratos via Pydantic (`Response Models`) e tratamento de exceções HTTP (`400`, `500`, `503`).
+## 2. Objetivos do Projeto
+1. **Automatizar a Captura de Dados:** Implementar extratores estáticos (`BeautifulSoup`) e dinâmicos (`Selenium`) para consolidar um corpus atualizado sobre sustentabilidade e governança urbana.
+2. **Garantir Confiabilidade e Arquitetura Desacoplada:** Disponibilizar os dados e inferências por meio de uma API RESTful (`FastAPI`) com contratos rigorosos (`Response Models`) e tratamento resiliente de falhas HTTP.
+3. **Aplicar IA Local e Prompt Engineering:** Integrar processamento de linguagem natural local (`DistilBERT`) e técnicas de engenharia de prompts para transformar textos não estruturados em métricas de sentimento, sínteses executivas e recomendações acionáveis.
+4. **Entregar Visualização Analítica Intuitiva:** Consolidar todo o fluxo em um dashboard interativo (`Streamlit`) que permita explorar desde os dados brutos até os insights gerados pela IA.
+
+---
+
+## 3. Alinhamento entre Dados, IA, Prompt Engineering e Negócio
+A arquitetura do projeto foi desenhada para que cada componente técnico gere valor direto ao problema de negócio:
+
+- **Dados Reais como Base de Evidência:** O uso de notícias reais coletadas via web scraping evita análises genéricas, ancorando o sistema em eventos concretos (como desastres climáticos, obras de infraestrutura verde e regulações ambientais).
+- **Inferência Local de Baixo Custo (`DistilBERT`):** A classificação automática de sentimento filtra rapidamente o fluxo informativo, permitindo identificar alertas críticos (`Negativo`) e boas práticas (`Positivo`) em milissegundos na CPU local, sem custos de nuvem ou vazamento de dados sensíveis.
+- **Engenharia de Prompts Orientada a Decisão:** A aplicação de *Prompt Engineering* (utilizando *Role Prompting*, delimitação explícita de contexto recuperado da base coletada e instruções de saída estruturada) reduz alucinações e direciona o LLM a atuar como um especialista em ESG, cruzando indicadores da base para propor planos de ação e mitigação de riscos.
+
+---
+
+## 4. Ciclo Completo de Ciência de Dados (TDSP / CRISP-DM)
+1. **Entendimento do Negócio:** Definição do escopo ESG/ODS 11 e dos indicadores de monitoramento socioambiental.
+2. **Aquisição e Entendimento dos Dados:** Construção dos pipelines de web scraping (`scraping_noticias.py` e `scraping_dinamico.py`) e análise exploratória no `data_summary_report.md`.
+3. **Preparação dos Dados:** Limpeza textual, deduplicação e estruturação em JSON (`preparacao_llm.py`) e exposição via `FastAPI` (`src/api/main.py`).
+4. **Modelagem e Integração de IA:** Embarque local do modelo `lxyuan/distilbert-base-multilingual-cased-sentiments-student` e implementação da camada de *Prompt Engineering* para análise inteligente.
+5. **Implantação e Visualização:** Disponibilização do dashboard multipáginas em `Streamlit` (`src/app.py` e `src/pages/`), permitindo interação em tempo real e exportação de resultados.
+
+---
+
+## 5. Critérios de Sucesso e Entregáveis Finais
+- [x] Pipeline funcional de coleta estática e dinâmica com armazenamento estruturado (`CSV`/`JSON`).
+- [x] Backend `FastAPI` com `Response Models` (`Pydantic`) e exceções HTTP tratadas (`400`, `404`, `422`, `500`, `503`, `504`).
+- [x] Modelo LLM local integrado e documentado (`docs/modelo_llm_justificativa.md`).
+- [x] Funcionalidade avançada com *Prompt Engineering* integrada ao dashboard final e artefatos TDSP concluídos.

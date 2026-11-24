@@ -1,111 +1,61 @@
-# Plataforma de Inteligência de Dados ESG & ODS 11 com LLM Local
+# Plataforma de Inteligência ESG & ODS 11 — Ciclo Completo de Ciência de Dados e IA
 
-Aplicação interativa desenvolvida ao longo do **Projeto de Bloco: Inteligência Artificial Aplicada** (Instituto Infnet), estruturada segundo os ciclos de vida **TDSP (Team Data Science Process)** e **CRISP-DM**. A solução realiza coleta automatizada de notícias sobre sustentabilidade urbana (ODS 11 e ODS 12), disponibiliza os dados via API RESTful e executa análise de sentimento localmente por meio de um modelo de linguagem (LLM) da HuggingFace.
-
----
-
-## Arquitetura e Funcionalidades por Etapa
-
-- **TP1 — Estruturação e Coleta Estática:** Configuração do ambiente virtual (`venv`), governança inicial (`docs/project_charter.md`) e pipeline de Web Scraping estático com `BeautifulSoup` e `Requests` (`src/data/scraping_noticias.py`) para extração de notícias da Agência Brasil.
-- **TP2 — Interface Interativa e Gestão de Dados:** Desenvolvimento do painel analítico em `Streamlit` com gerenciamento de estado (`st.session_state`), cache de leitura (`@st.cache_data`), filtros dinâmicos, além de upload e exportação de datasets em CSV.
-- **TP3 — Arquitetura Multipages, Scraping Dinâmico e API RESTful:**
-  - Evolução do frontend para arquitetura multipáginas (`src/pages/`).
-  - Implementação de coleta dinâmica em páginas renderizadas por JavaScript utilizando `Selenium` (`src/data/scraping_dinamico.py`).
-  - Construção de pipeline de sanitização e preparação de corpus textual (`src/data/preparacao_llm.py`).
-  - Criação do backend em `FastAPI` (`src/api/main.py`) com rotas `GET` e `POST` integradas à interface.
-- **TP4 — Integração de LLM Local, Response Models e Tratamento de Erros:**
-  - Integração local do modelo `lxyuan/distilbert-base-multilingual-cased-sentiments-student` via `HuggingFace Transformers` e `PyTorch` operando em CPU (`device=-1`).
-  - Endpoint `POST /processar_texto` para classificação de sentimento ESG (`Positivo`, `Neutro`, `Negativo`) com medição de confiança e latência.
-  - Validação estrita de entrada e saída em todas as rotas com `Response Models` (`Pydantic`).
-  - Tratamento robusto de exceções HTTP (`400`, `404`, `422`, `500`, `503`, `504`) e manipulador global de erros de validação.
+Aplicação ponta a ponta de Ciência de Dados Aplicada e Engenharia de Inteligência Artificial desenvolvida para monitoramento socioambiental e apoio à tomada de decisão em **Governança Corporativa (ESG)**, alinhada à **Agenda 2030 da ONU** (**ODS 11 — Cidades e Comunidades Sustentáveis** e **ODS 12 — Consumo e Produção Responsáveis**).
 
 ---
 
-## Estrutura de Diretórios
+## Arquitetura e Ciclo de Ciência de Dados (TDSP / CRISP-DM)
+
+1. **Aquisição de Dados (`src/data/`):**
+   - `scraping_noticias.py`: Coleta automatizada de manchetes e resumos via `Requests` + `BeautifulSoup4`.
+   - `scraping_dinamico.py`: Extração de conteúdos dinâmicos renderizados em JavaScript via `Selenium WebDriver`.
+2. **Preparação e Sanitização (`src/data/preparacao_llm.py`):**
+   - Limpeza de ruídos HTML, normalização textual, deduplicação por título e serialização em `data/processed/dataset_llm_prep.json`.
+3. **Backend RESTful & Validação (`src/api/main.py`):**
+   - API construída com `FastAPI` e `Pydantic` (`Response Models` estritos e tratamento de erros HTTP `400`, `404`, `422`, `500`, `503` e `504`).
+4. **Modelos de IA Locais & Prompt Engineering (`src/ai/agente_esg.py`):**
+   - **Classificação Analítica:** `lxyuan/distilbert-base-multilingual-cased-sentiments-student` para categorização de polaridade ESG (`Positivo`, `Neutro`, `Negativo`).
+   - **Agente Inteligente de Decisão:** `Qwen/Qwen2.5-1.5B-Instruct` operado com *Role Prompting*, *Context Grounding* e *Structured Output* para diagnóstico de riscos e recomendações de governança.
+5. **Dashboard Executivo Interativo (`src/app.py` e `src/pages/`):**
+   - Interface multipáginas em `Streamlit`, culminando em `5_Dashboard_Final_IA.py`, que integra métricas de coleta, gráficos de distribuição de sentimentos, auditoria de prompts e geração de pareceres estratégicos em tempo real.
+
+---
+
+## Estrutura do Projeto
 
 ```text
-tp1/
 ├── data/
-│   ├── processed/
-│   │   └── dataset_llm_prep.json          # Corpus textual sanitizado para inferência
-│   ├── raw/
-│   │   ├── corpus_noticias.txt            # Texto bruto consolidado
-│   │   ├── noticias_dinamicas.csv         # Coleta dinâmica via Selenium
-│   │   └── noticias_sustentabilidade.csv  # Coleta estática via BeautifulSoup
-│   └── sample/                            # Amostras de dados para testes
+│   ├── raw/                  # Bases brutas extraídas (CSV estático e dinâmico)
+│   └── processed/            # Corpus sanitizado para LLMs (JSON)
 ├── docs/
-│   ├── data_summary_report.md             # Relatório exploratório dos dados
-│   ├── modelo_llm_justificativa.md        # Justificativa técnica do modelo LLM local (TP4)
-│   └── project_charter.md                 # Termo de abertura e escopo do projeto
-├── notebooks/                             # Notebooks de exploração e prototipação
+│   ├── project_charter.md    # Artefato TDSP: Escopo, problema de negócio e alinhamento IA
+│   ├── data_summary_report.md# Artefato TDSP: Dicionário de dados e integração
+│   └── modelo_llm_justificativa.md # Justificativa técnica da arquitetura LLM local
 ├── src/
+│   ├── ai/
+│   │   └── agente_esg.py     # Pipeline híbrido DistilBERT + Qwen2.5 + Prompt Engineering
 │   ├── api/
-│   │   └── main.py                        # Servidor FastAPI + LLM local + Response Models
-│   ├── data/
-│   │   ├── preparacao_llm.py              # Sanitização e estruturação de textos para IA
-│   │   ├── scraping_dinamico.py           # Extração automatizada com Selenium
-│   │   └── scraping_noticias.py           # Extração estática com BeautifulSoup
-│   ├── pages/
-│   │   ├── 1_Painel_Principal.py          # Visão geral e indicadores ESG
-│   │   ├── 2_Gestao_Arquivos.py           # Upload, visualização e download de CSVs
-│   │   ├── 3_API_FastAPI.py               # Consumo das rotas CRUD da FastAPI
-│   │   └── 4_Preparacao_IA.py             # Classificação de sentimento em tempo real via LLM
-│   ├── utils/                             # Funções auxiliares
-│   └── app.py                             # Ponto de entrada da aplicação Streamlit
-├── .gitignore
-├── README.md
-└── requirements.txt
+│   │   └── main.py           # Servidor FastAPI com Response Models e endpoints de IA
+│   ├── data/                 # Scripts de Web Scraping e preparação textual
+│   ├── pages/                # Páginas do dashboard multipáginas Streamlit
+│   └── app.py                # Ponto de entrada da aplicação Streamlit
+└── requirements.txt          # Dependências do ambiente Python
 ```
-
----
-
-## Requisitos de Hardware e Ambiente
-
-O modelo local foi selecionado e otimizado para execução 100% *offline* sem necessidade de GPU dedicada:
-- **Sistema Operacional:** Windows
-- **Processador:** AMD Ryzen 7 7735HS (inferência em CPU via `device=-1`)
-- **Memória RAM:** 16 GB (consumo aproximado de ~1,3 GB pelo modelo DistilBERT carregado em memória)
-- **Armazenamento:** ~550 MB em cache local (`~/.cache/huggingface/`) após o primeiro download
 
 ---
 
 ## Como Executar Localmente
 
-### 1. Clonar o repositório e ativar o ambiente virtual
-```powershell
-git clone <URL_DO_REPOSITORIO>
-cd tp1
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-### 2. Instalar as dependências
-```powershell
-pip install -r requirements.txt
-```
-
-### 3. Iniciar o Backend FastAPI (Terminal 1)
-Na primeira inicialização, o modelo `lxyuan/distilbert-base-multilingual-cased-sentiments-student` será baixado automaticamente para o cache local:
-```powershell
-uvicorn src.api.main:app --reload
-```
-- **Documentação Interativa (Swagger UI):** `http://127.0.0.1:8000/docs`
-
-### 4. Iniciar o Frontend Streamlit (Terminal 2)
-Em um segundo terminal com a `venv` ativada:
-```powershell
-streamlit run src/app.py
-```
-- **Interface Web:** `http://localhost:8501`
-
----
-
-## Principais Endpoints da API
-
-| Método | Rota | Descrição | Response Model |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | Verifica status da API e carregamento do modelo local | `StatusAPIResponse` |
-| `GET` | `/noticias` | Lista todas as notícias consolidadas na base | `List[NoticiaResponse]` |
-| `GET` | `/noticias/{noticia_id}` | Consulta uma notícia específica pelo ID | `NoticiaResponse` |
-| `POST` | `/noticias` | Cadastra uma nova notícia na base em memória | `CadastroNoticiaResponse` |
-| `POST` | `/processar_texto` | Executa classificação de sentimento local via DistilBERT | `ProcessamentoTextoResponse` |
+1. **Ativar o ambiente virtual e instalar dependências:**
+   ```powershell
+   .\venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   ```
+2. **Iniciar o servidor FastAPI (Terminal 1):**
+   ```powershell
+   uvicorn src.api.main:app --reload
+   ```
+3. **Iniciar o Dashboard Streamlit (Terminal 2):**
+   ```powershell
+   streamlit run src/app.py
+   ```
